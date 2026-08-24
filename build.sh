@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_NAME="Zulu"
-BUNDLE_ID="org.aperturehq.zulu"
+BUNDLE_ID="com.rushilchoksi.zulu"
 VERSION="1.0.0"
 BUILD_DIR="$ROOT/build"
 APP="$BUILD_DIR/$APP_NAME.app"
