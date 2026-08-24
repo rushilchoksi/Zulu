@@ -5,7 +5,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_NAME="Zulu"
 BUNDLE_ID="com.rushilchoksi.zulu"
-VERSION="1.0.0"
+VERSION="1.1.0"
 BUILD_DIR="$ROOT/build"
 APP="$BUILD_DIR/$APP_NAME.app"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/Applications}"
@@ -15,10 +15,10 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 
 echo "==> Compiling"
 swiftc -O \
-    -target "$(uname -m)-apple-macos13.0" \
+    -target "$(uname -m)-apple-macos14.0" \
     -swift-version 5 \
     -o "$APP/Contents/MacOS/$APP_NAME" \
-    "$ROOT/Sources/main.swift"
+    "$ROOT"/Sources/*.swift
 
 echo "==> Assembling bundle"
 cat > "$APP/Contents/Info.plist" <<PLIST
@@ -33,7 +33,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CFBundlePackageType</key>         <string>APPL</string>
     <key>CFBundleShortVersionString</key>  <string>$VERSION</string>
     <key>CFBundleVersion</key>             <string>$VERSION</string>
-    <key>LSMinimumSystemVersion</key>      <string>13.0</string>
+    <key>LSMinimumSystemVersion</key>      <string>14.0</string>
     <key>LSUIElement</key>                 <true/>
     <key>NSHumanReadableCopyright</key>    <string>MIT Licensed</string>
 </dict>
@@ -53,7 +53,7 @@ if [[ "${NO_INSTALL:-0}" != "1" ]]; then
     rm -rf "${INSTALL_DIR:?}/$APP_NAME.app"
     cp -R "$APP" "$INSTALL_DIR/"
     open "$INSTALL_DIR/$APP_NAME.app"
-    echo "==> $APP_NAME is running — look at the right side of your menu bar"
+    echo "==> $APP_NAME is running: look at the right side of your menu bar"
 else
     echo "==> Built at $APP"
 fi
