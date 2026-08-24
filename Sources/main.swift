@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private let clock = Clock()
     private var cancellables = Set<AnyCancellable>()
     private var lastTitle = ""
+    private let barFont = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -17,6 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             button.target = self
             button.action = #selector(handleClick(_:))
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+            button.alignment = .left
         }
 
         let root = RootView()
@@ -46,6 +48,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             self?.forceRenderTitle()
         }
 
+        updateLength()
         renderTitle(at: Date())
     }
 
@@ -53,7 +56,52 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
     private func forceRenderTitle() {
         lastTitle = ""
+        updateLength()
         renderTitle(at: Date())
+    }
+
+    private func measure(_ string: String) -> CGFloat {
+        (string as NSString).size(withAttributes: [.font: barFont]).width
+    }
+
+    /// The widest title the current settings can ever produce.
+    ///
+    /// Digits are monospaced, so they never change width, but weekday and month
+    /// names do, and so does an AM/PM suffix. Left unpinned, the item would
+    /// resize every time one of those changed and shove the rest of the menu
+    /// bar sideways. Measuring the worst case once and holding that width keeps
+    /// the item still.
+    private func stableWidth() -> CGFloat {
+        let clock = "88:88" + (prefs.showSeconds ? ":88" : "")
+        let suffixes = prefs.use24Hour ? [""] : [" AM", " PM"]
+
+        let bodies = suffixes.map { suffix in
+            prefs.barZoneIdentifiers
+                .compactMap { TimeZone(identifier: $0) }
+                .map { "\(TimeKit.tag(for: $0)) \(clock)\(suffix)" }
+                .joined(separator: "  ·  ")
+        }
+
+        var widest: CGFloat = 0
+        if prefs.showDate {
+            let weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+            let months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+            for body in bodies {
+                for weekday in weekdays {
+                    for month in months {
+                        widest = max(widest, measure("\(weekday) 88 \(month)  " + body))
+                    }
+                }
+            }
+        } else {
+            for body in bodies { widest = max(widest, measure(body)) }
+        }
+        return ceil(widest) + 12
+    }
+
+    private func updateLength() {
+        statusItem.length = stableWidth()
     }
 
     private func renderTitle(at date: Date) {
@@ -70,9 +118,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
         guard title != lastTitle else { return }
         lastTitle = title
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .left
         statusItem.button?.attributedTitle = NSAttributedString(
             string: title,
-            attributes: [.font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular)])
+            attributes: [.font: barFont, .paragraphStyle: paragraph])
     }
 
     // MARK: Interaction

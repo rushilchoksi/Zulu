@@ -49,10 +49,18 @@ codesign --force --sign - --timestamp=none "$APP" >/dev/null 2>&1 || \
 if [[ "${NO_INSTALL:-0}" != "1" ]]; then
     echo "==> Installing to $INSTALL_DIR"
     mkdir -p "$INSTALL_DIR"
-    pkill -x "$APP_NAME" 2>/dev/null || true
+    if pkill -x "$APP_NAME" 2>/dev/null; then
+        # Let the old instance release the bundle before it is replaced,
+        # otherwise LaunchServices can fail the relaunch with -600.
+        for _ in 1 2 3 4 5 6 7 8 9 10; do
+            pgrep -x "$APP_NAME" >/dev/null || break
+            sleep 0.2
+        done
+    fi
     rm -rf "${INSTALL_DIR:?}/$APP_NAME.app"
     cp -R "$APP" "$INSTALL_DIR/"
-    open "$INSTALL_DIR/$APP_NAME.app"
+    sleep 0.3
+    open -n "$INSTALL_DIR/$APP_NAME.app"
     echo "==> $APP_NAME is running: look at the right side of your menu bar"
 else
     echo "==> Built at $APP"

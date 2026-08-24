@@ -22,13 +22,10 @@ struct SettingsPane: View {
             }
 
             group("General") {
-                Toggle("Start at login", isOn: Binding(
+                toggle("Start at login", isOn: Binding(
                     get: { launchAtLogin },
                     set: { _ in toggleLogin() }
                 ))
-                .toggleStyle(.switch)
-                .controlSize(.mini)
-                .font(.system(size: 12))
 
                 if let loginError {
                     Text(loginError)
@@ -61,11 +58,19 @@ struct SettingsPane: View {
         }
     }
 
+    /// Label left, switch flush right, so every switch lands in one column
+    /// regardless of how long the label is.
     private func toggle(_ title: String, isOn: Binding<Bool>) -> some View {
-        Toggle(title, isOn: isOn)
-            .toggleStyle(.switch)
-            .controlSize(.mini)
-            .font(.system(size: 12))
+        HStack(spacing: 8) {
+            Text(title)
+                .font(.system(size: 12))
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            Toggle("", isOn: isOn)
+                .toggleStyle(.switch)
+                .controlSize(.mini)
+                .labelsHidden()
+        }
     }
 
     private func toggleLogin() {
